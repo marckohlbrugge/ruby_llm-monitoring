@@ -3,9 +3,17 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in ruby_llm-monitoring.gemspec.
 gemspec
 
+rails_version = ENV.fetch("RAILS_VERSION", "8.1.0")
+
+gem "rails", "~> #{rails_version}"
+
 gem "puma"
 
-gem "sqlite3"
+if rails_version.start_with?("7.0")
+  gem "sqlite3", "~> 1.7"
+else
+  gem "sqlite3", ">= 2.9"
+end
 
 gem "propshaft"
 
@@ -13,6 +21,9 @@ gem "propshaft"
 gem "rubocop-rails-omakase", require: false
 
 # Test dependencies
+unless rails_version.start_with?("8")
+  gem "minitest", "< 6.0"
+end
 gem "vcr"
 gem "webmock"
 

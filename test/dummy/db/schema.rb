@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2025_12_08_171258) do
+ActiveRecord::Schema[7.0].define(version: 2025_12_08_171258) do
   create_table "ruby_llm_monitoring_events", force: :cascade do |t|
     t.integer "allocations"
     t.float "cost"

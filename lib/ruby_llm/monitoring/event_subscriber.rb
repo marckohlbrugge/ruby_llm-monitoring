@@ -7,7 +7,7 @@ module RubyLLM
           cpu_time: event.cpu_time,
           duration: event.duration,
           end: event.end,
-          gc_time: event.gc_time,
+          gc_time: event.try(:gc_time),
           idle_time: event.idle_time,
           name: event.name,
           payload: event.payload,
