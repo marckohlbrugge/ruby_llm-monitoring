@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.2].define(version: 2025_12_08_171258) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_21_093938) do
   create_table "ruby_llm_monitoring_events", force: :cascade do |t|
     t.integer "allocations"
     t.float "cost"
@@ -31,5 +31,6 @@ ActiveRecord::Schema[7.2].define(version: 2025_12_08_171258) do
     t.float "time"
     t.string "transaction_id"
     t.datetime "updated_at", null: false
+    t.index ["created_at", "provider", "model"], name: "idx_on_created_at_provider_model_fad60c1ab6"
   end
 end

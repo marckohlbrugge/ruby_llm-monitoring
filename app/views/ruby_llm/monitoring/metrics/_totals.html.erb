@@ -2,30 +2,30 @@
   <div class="column is-3">
     <div class="box has-text-centered">
       <p class="heading">Requests</p>
-      <p class="title"><%= number_with_delimiter(@totals[:requests]) %></p>
+      <p class="title"><%= number_with_delimiter(@totals.requests) %></p>
     </div>
   </div>
   <div class="column is-3">
     <div class="box has-text-centered">
       <p class="heading">Cost</p>
-      <p class="title"><%= number_to_currency(@totals[:cost]) %></p>
+      <p class="title"><%= number_to_currency(@totals.cost) %></p>
     </div>
   </div>
   <div class="column is-3">
     <div class="box has-text-centered">
       <p class="heading">Avg Response Time</p>
-      <p class="title"><%= @totals[:avg_response_time] ? "#{@totals[:avg_response_time].round(1)}ms" : "N/A" %></p>
+      <p class="title"><%= @totals.avg_response_time ? "#{@totals.avg_response_time.round(1)}ms" : "N/A" %></p>
     </div>
   </div>
   <div class="column is-3">
     <div class="box has-text-centered">
       <p class="heading">Error Rate</p>
-      <p class="title"><%= @totals[:error_rate] %>%</p>
+      <p class="title"><%= @totals.error_rate %>%</p>
     </div>
   </div>
 </div>
 
-<% if @totals_by_provider.any? %>
+<% if @totals_by_dimension.any? %>
   <div class="box mb-5">
     <table class="table is-fullwidth is-striped">
       <thead>
@@ -37,7 +37,7 @@
         </tr>
       </thead>
       <tbody>
-        <% @totals_by_provider.each do |row| %>
+        <% @totals_by_dimension.each do |row| %>
           <tr>
             <td><%= row.provider %>/<%= row.model %></td>
             <td class="has-text-right"><%= number_with_delimiter(row.requests) %></td>
