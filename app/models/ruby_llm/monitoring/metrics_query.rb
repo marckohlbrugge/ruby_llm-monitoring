@@ -29,8 +29,8 @@ module RubyLLM::Monitoring
     private
 
     def build_result
-      metrics_data = { throughput: {}, cost: {}, response_time: {}, errors: {} }
-      totals_by_key = Hash.new { |h, k| h[k] = { requests: 0, cost: 0.0, duration_weighted: 0.0, errors: 0 } }
+      metrics_data = {throughput: {}, cost: {}, response_time: {}, errors: {}}
+      totals_by_key = Hash.new { |h, k| h[k] = {requests: 0, cost: 0.0, duration_weighted: 0.0, errors: 0} }
 
       fetch_aggregated_data.each do |row|
         key = dimensions.map { |d| row[d.to_s] }
@@ -41,16 +41,16 @@ module RubyLLM::Monitoring
         error_count = row["error_count"].to_i
 
         metrics_data[:throughput][key] ||= []
-        metrics_data[:throughput][key] << [ ts, count ]
+        metrics_data[:throughput][key] << [ts, count]
 
         metrics_data[:cost][key] ||= []
-        metrics_data[:cost][key] << [ ts, cost ]
+        metrics_data[:cost][key] << [ts, cost]
 
         metrics_data[:response_time][key] ||= []
-        metrics_data[:response_time][key] << [ ts, avg_duration || 0 ]
+        metrics_data[:response_time][key] << [ts, avg_duration || 0]
 
         metrics_data[:errors][key] ||= []
-        metrics_data[:errors][key] << [ ts, error_count ]
+        metrics_data[:errors][key] << [ts, error_count]
 
         totals_by_key[key][:requests] += count
         totals_by_key[key][:cost] += cost
@@ -88,30 +88,31 @@ module RubyLLM::Monitoring
     def fetch_aggregated_data
       bucket_seconds = resolution.to_i
       time_bucket = time_bucket_sql(bucket_seconds)
-      dimension_columns = dimensions.join(", ")
+      dimension_selects = dimensions.map { |d| "#{json_extract(d)} as #{d}" }.join(", ")
+      dimension_groups = dimensions.map { |d| json_extract(d) }.join(", ")
 
       sql = <<~SQL.squish
         SELECT
-          #{dimension_columns},
+          #{dimension_selects},
           #{time_bucket} as time_bucket,
           COUNT(*) as request_count,
           COALESCE(SUM(cost), 0) as total_cost,
           AVG(duration) as avg_duration,
-          SUM(CASE WHEN exception_class IS NOT NULL THEN 1 ELSE 0 END) as error_count
+          SUM(CASE WHEN #{json_extract_array("exception", 0)} IS NOT NULL THEN 1 ELSE 0 END) as error_count
         FROM #{Event.table_name}
         WHERE created_at >= :start_time
           AND (:end_time IS NULL OR created_at <= :end_time)
-        GROUP BY #{dimension_columns}, time_bucket
+        GROUP BY #{dimension_groups}, time_bucket
         ORDER BY time_bucket
       SQL
 
       Event.connection.select_all(
-        Event.sanitize_sql_array([ sql, start_time: time_range.begin, end_time: time_range.end ])
+        Event.sanitize_sql_array([sql, start_time: time_range.begin, end_time: time_range.end])
       )
     end
 
     def time_bucket_sql(bucket_seconds)
-      case Event.connection.adapter_name.downcase
+      case adapter_name
       when "postgresql"
         "EXTRACT(EPOCH FROM date_trunc('second', created_at))::bigint / #{bucket_seconds} * #{bucket_seconds}"
       when "mysql2"
@@ -121,11 +122,37 @@ module RubyLLM::Monitoring
       end
     end
 
+    def json_extract(field)
+      case adapter_name
+      when "postgresql"
+        "payload->>'#{field}'"
+      when "mysql2"
+        "JSON_UNQUOTE(JSON_EXTRACT(payload, '$.#{field}'))"
+      else # sqlite
+        "json_extract(payload, '$.#{field}')"
+      end
+    end
+
+    def json_extract_array(field, index)
+      case adapter_name
+      when "postgresql"
+        "payload->'#{field}'->>#{index}"
+      when "mysql2"
+        "JSON_UNQUOTE(JSON_EXTRACT(payload, '$.#{field}[#{index}]'))"
+      else # sqlite
+        "json_extract(payload, '$.#{field}[#{index}]')"
+      end
+    end
+
+    def adapter_name
+      @adapter_name ||= Event.connection.adapter_name.downcase
+    end
+
     def build_metric_series(title:, data:, unit: nil)
       {
         title: title,
         unit: unit,
-        series: data.map { |k, v| { name: k.join("/"), data: v } }
+        series: data.map { |k, v| {name: k.join("/"), data: v} }
       }.compact
     end
   end
