@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_21_093938) do
+ActiveRecord::Schema[8.1].define(version: 2026_01_21_111526) do
   create_table "ruby_llm_monitoring_events", force: :cascade do |t|
     t.integer "allocations"
     t.float "cost"
@@ -18,19 +18,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_21_093938) do
     t.datetime "created_at", null: false
     t.float "duration"
     t.float "end"
-    t.virtual "exception_class", type: :string, as: "json_extract(payload, '$.exception[0]')", stored: true
-    t.virtual "exception_message", type: :string, as: "json_extract(payload, '$.exception[1]')", stored: true
     t.float "gc_time"
     t.float "idle_time"
-    t.virtual "input_tokens", type: :integer, as: "CAST(payload->>'input_tokens' AS INTEGER)", stored: true
-    t.virtual "model", type: :string, as: "payload->>'model'", stored: true
     t.string "name"
-    t.virtual "output_tokens", type: :integer, as: "CAST(payload->>'output_tokens' AS INTEGER)", stored: true
     t.json "payload"
-    t.virtual "provider", type: :string, as: "payload->>'provider'", stored: true
     t.float "time"
     t.string "transaction_id"
     t.datetime "updated_at", null: false
-    t.index ["created_at", "provider", "model"], name: "idx_on_created_at_provider_model_fad60c1ab6"
+    t.index ["created_at"], name: "index_ruby_llm_monitoring_events_on_created_at"
   end
 end
